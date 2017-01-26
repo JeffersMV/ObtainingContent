@@ -19,38 +19,47 @@ puts 'Name of the file where the results will be recorded: ' +namefile
 
 require 'rubygems'
 require 'open-uri'
+require 'nokogiri'
+require 'csv'
 url = 'http://www.petsonic.com/es/perros/snacks-y-huesos-perro'
 html = open(url)
-require 'nokogiri'
 page = Nokogiri::HTML(html)
+products = []
+counte = 0
 page.xpath('//div[@class="productlist"]/div/div/div/div/div/a[@class="product_img_link"]/@href').each do |link|
-  puts link
   multiProductPage=Nokogiri::HTML(open(link))
-  #products = []
   multiProductPage.xpath('//div[@class="container"]/div[@class="row"]/section[@id="center_column"]
 /div[@class="primary_block"]/div[@class="row"]').each do |productlink|
-    #title_el = productlink.at_css('h1 a')
-    #title_el.children.each { |c| c.remove if c.name == 'span' }
-    #name = title_el.text.strip
-
     title = productlink.xpath('//div[@id="right"]/div[@class="pb-center-column"]
-/div[@class=" col-xs-10"]/div[@class="product-name"]/h1')
-
-    #title = 'Caja de Navidad para Perro' что бы выводило
-
-    price =productlink.xpath('//div[@id="right"]/div[@class="pb-center-column"]
-/div[@class="box-center clearfix"]/form[@id="buy_block"]/div[@class="box-product-center"]
-/div[@class="product_attributes"]/div[@id="attributes"]/fieldset[@class="attribute_fieldset"]
-/div[@class="attribute_list"]/ul[@class="attribute_labels_lists"]/li/span[@class="attribute_price"]').text.strip
-
-    #price =    тут что бы выводило несколько цен в массив
-
-    img = productlink.xpath('//div[@id="left"]/div[@id="sidebar"]/div[@id="image-block"]/span[@id="view_full_size"]/img[@id="bigpic"]/@src')
-    puts img
-    puts price
-    puts title
-    puts
+                                /div[@class=" col-xs-10"]/div[@class="product-name"]/h1/text()').text.strip
+    pricelist =productlink.xpath('//div[@id="right"]/div[@class="pb-center-column"]
+                                  /div[@class="box-center clearfix"]/form[@id="buy_block"]/div[@class="box-product-center"]
+                                  /div[@class="product_attributes"]/div[@id="attributes"]/fieldset[@class="attribute_fieldset"]
+                                  /div[@class="attribute_list"]/ul[@class="attribute_labels_lists"]/li')
+    prices = []
+    pricelist.xpath('//span[@class="attribute_price"]/text()').each do |price| prices.push(price.text.strip)
+    end
+    attnames = []
+    pricelist.xpath('//span[@class="attribute_name"]/text()').each do |attname| attnames.push(attname)
+    end
+    img = productlink.xpath('//div[@id="left"]/div[@id="sidebar"]/div[@id="image-block"]/span[@id="view_full_size"]/img[@id="bigpic"]/@src').text
+    i=0
+    while i < prices.length
+      products[counte] = [title+" - "+attnames[i], prices[i], img]
+      counte +=1
+      i+=1
+    end
   end
-  puts
+end
+puts '=======>>>>>'
+puts products.length
+
+x = 1
+CSV.open('text.csv', 'w') do |writer|
+  products.each do |a|
+    b = x.to_s+") "+a[0]+"         "+a[1]+"         "+a[2]
+    writer << [b]
+    x+=1
+  end
 end
 
